@@ -27,6 +27,8 @@ System health and controlled operational actions are planned for a later phase.
 - [Product Requirements Document](./PRD.md) — product goals, users, scope, workflows, requirements, release plan, and acceptance criteria.
 - [Agent Instructions](./AGENT.md) — repository-specific rules for contributors and AI coding agents.
 
+The PRD's System Health & API Monitoring section is a future-phase proposal. Keep-alive checks must run outside the monitored RetailOS API and must not be presented as a guarantee of production availability.
+
 ## Important product and security boundaries
 
 - This is an internal platform console, not a second shop dashboard.
