@@ -32,6 +32,7 @@ Trexave therefore needs a secure administrative surface and the server capabilit
 4. Provide a usable feedback review workflow that distinguishes message delivery from support resolution.
 5. Make platform-admin actions traceable through a dedicated audit record.
 6. Establish a secure foundation for later operational capabilities.
+7. Give authorized operators visibility into registered service health and a separately hosted keep-alive scheduler without making monitoring depend on the service being monitored.
 
 ## 4. Non-goals
 
@@ -44,7 +45,7 @@ The initial release is not intended to:
 - Delete or suspend accounts or stores.
 - Impersonate shop owners or sign in as another user.
 - Provide unrestricted access to shop-level customer records, debts, or detailed financial transactions.
-- Become a complete infrastructure monitoring or incident-management platform.
+- Become a complete infrastructure observability or incident-management platform. The later System Health phase may include focused API availability checks, keep-alive scheduling, and basic incident alerts, but not full infrastructure observability.
 - Expose secrets, raw server exceptions, credentials, or environment configuration.
 
 These capabilities require separate product, security, and operational decisions before they can be considered.
@@ -90,7 +91,7 @@ The proposed primary navigation is:
 3. **Subscriptions**
 4. **Feedback Inbox**
 5. **Admin Audit Log**
-6. **System Health** — later phase
+6. **System Health & API Monitoring** — later phase
 
 The admin console should have its own layout and navigation. It may reuse sound design conventions from the RetailOS Client, but should not copy the shop-owner dashboard's information architecture.
 
@@ -246,21 +247,61 @@ Requirements:
 - Sensitive values must be excluded, including passwords, password hashes, session data, tokens, secrets, credentials, and payment credentials.
 - Access to audit records must itself be restricted to authorized platform administrators.
 
-### 7.6 System Health — later phase
+### 7.6 System Health & API Monitoring — later phase
 
-**Purpose:** Provide a safe, high-level view of application readiness and selected operational dependencies.
+**Purpose:** Give authorized operators a safe, high-level view of RetailOS service health and selected dependencies, while providing an independently operated scheduler for periodic API checks. This module extends the admin console; it does not turn the console into a general-purpose infrastructure observability or incident-management product.
 
-Potential information:
-- Application readiness.
-- Database connectivity status.
+**System health information** may include:
+- Application liveness and readiness.
+- Database connectivity status, where a safe diagnostic is available.
 - Feedback-delivery configuration or service status.
 - Safe operational error summaries.
+- Registered service status, last check, response time, and recent availability history.
 
-Requirements:
-- The server must expose a dedicated, restricted health/diagnostics contract.
-- Do not expose environment variables, secrets, database connection strings, credentials, raw exception traces, or internal infrastructure details.
-- The current public health endpoint only provides a basic application readiness response and is not sufficient for this feature.
-- This section is not required for the initial release.
+**API keep-alive and monitoring**
+
+The admin console should allow authorized administrators to manage monitored service endpoints and inspect their monitoring results. The monitoring scheduler must run independently of RetailOS Server and of the monitored target. The admin browser must never be responsible for recurring checks; closing the browser or signing out must not stop scheduled monitoring.
+
+Proposed capabilities:
+- Register and name a monitored service, with its environment and HTTPS health-check URL.
+- Configure an approved check interval. The initial recommended default is every 10 minutes; other intervals should be explicitly supported and bounded by operational policy.
+- Enable, pause, and resume a monitor.
+- Trigger a one-time manual check.
+- View current status, last successful check, last attempted check, next scheduled check, response time, consecutive failures, and recent check history.
+- View aggregate availability and uptime over defined reporting windows once sufficient history exists.
+- View incidents, including when a service was detected as unavailable and when it recovered.
+- Configure notification destinations and alert preferences when a supported notification channel is approved.
+
+**Proposed execution architecture:** Use an external scheduled worker, with Cloudflare Workers Cron Triggers as the preferred initial option for evaluation. A scheduled Worker can run on a 10-minute cron expression (for example, `*/10 * * * *`), load enabled monitor configurations from monitoring-owned storage, and send bounded HTTP checks to registered endpoints. Cloudflare D1 is a proposed storage option for monitor configuration and check history. These are architecture recommendations, not existing project infrastructure or confirmed deployments. The scheduler, storage, and check execution must remain operational when RetailOS Server is unavailable or the admin interface is closed. The admin interface should communicate with the monitoring control plane through an authenticated contract; it should not implement the scheduler itself.
+
+**Health-check contract:**
+- Prefer a lightweight liveness endpoint for keep-alive traffic, such as `GET /health/live`, that does not perform expensive database queries or business operations.
+- A separate readiness check, such as `GET /health/ready`, may verify critical dependencies. Readiness checks must be configured deliberately and must not be confused with a basic keep-alive request.
+- A successful HTTP response proves only that the configured endpoint responded according to the monitor's success criteria. It does not prove that every business workflow, database operation, login, checkout, or background job is functioning.
+- The exact health routes and response criteria must be verified in RetailOS Server before implementation. Example paths in this PRD are illustrative, not existing API contracts.
+- Checks should use bounded timeouts, limited response-body inspection, and safe response metadata. Do not store full response bodies by default.
+
+**Status and failure handling:**
+- Record each check's timestamp, outcome, HTTP status where available, response duration, and a sanitized failure category.
+- Distinguish healthy, degraded, down, paused, and unknown states. Define the exact transition rules before implementation.
+- Use configurable consecutive-failure thresholds and recovery rules to avoid alerting on a single transient failure. A proposed starting policy is to retry or require multiple consecutive failures before declaring a service down; exact retry timing and thresholds remain an operational decision.
+- Record recovery events and prevent duplicate notifications for the same ongoing incident.
+- Do not fabricate uptime percentages. Calculate them only from retained, valid check history and clearly disclose the measurement window and missing-data treatment.
+- Monitoring execution failures must be distinguishable from target-service failures.
+
+**Security and reliability requirements:**
+- Only authorized platform administrators may create, change, pause, resume, or manually check monitors, and every control-plane operation must be authenticated and authorized server-side.
+- Treat registered URLs as untrusted input. Enforce HTTPS where appropriate, block loopback, private, link-local, multicast, and other non-public destination ranges, validate DNS resolution and redirects, revalidate destinations to mitigate DNS-rebinding and SSRF risks, and restrict supported methods and ports. Do not allow arbitrary internal-network requests.
+- Do not expose monitor credentials or secret headers after creation. Store secrets only in an approved secret store or encrypted storage with restricted access; never return them to the browser or write them to logs.
+- Apply per-monitor and global request limits, execution timeouts, response-size limits, and concurrency controls.
+- Protect scheduler/control-plane endpoints with service authentication and replay-resistant authorization. Do not rely on an obscured URL as protection.
+- Keep monitoring infrastructure independent from the monitored RetailOS API. A failure of RetailOS Server must not prevent the external scheduler from running its next check.
+- Define retention, deletion, and access policies for check history and incident records before production rollout.
+- Do not expose environment variables, secrets, database connection strings, credentials, raw exception traces, or internal infrastructure details in the admin UI or public health responses.
+
+**Hosting caveat:** Periodic requests may reduce idle-related sleeping on some hosting plans, but they do not make a free hosting tier production-grade, prevent platform restarts, remove usage limits, or guarantee availability. The admin UI must not promise that keep-alive checks prevent all sleep or downtime. Hosting-provider terms and limits must be reviewed before relying on this behavior.
+
+**Current limitation:** The current public health endpoint only provides a basic application readiness response and is not sufficient for this feature. The repository does not yet have a verified monitoring control plane, scheduled Worker, monitoring storage, or administrative monitoring API. This section is a proposed later-phase capability, not an implemented feature. It is not required for the initial release.
 
 ## 8. Proposed administrative API contracts
 
@@ -276,6 +317,13 @@ The following are proposed API contracts for coordination between the admin clie
 | `PATCH /admin/feedback/{id}` | Update the separate support workflow status. |
 | `GET /admin/audit` | Retrieve platform-admin audit records. |
 | `GET /admin/health` | Retrieve restricted operational diagnostics; later phase. |
+| `GET /admin/monitoring/summary` | Retrieve aggregate monitor status and recent availability; later phase. |
+| `GET /admin/monitors` | List configured monitors and their current safe status; later phase. |
+| `POST /admin/monitors` | Register a monitored endpoint; later phase. |
+| `PATCH /admin/monitors/{id}` | Update monitor configuration or enabled state; later phase. |
+| `POST /admin/monitors/{id}/checks` | Request a one-time manual check; later phase. |
+| `GET /admin/monitors/{id}/checks` | Retrieve paginated check history; later phase. |
+| `GET /admin/incidents` | List monitoring incidents and recovery events; later phase. |
 
 All administrative routes must:
 - Require a valid authenticated session.
@@ -341,7 +389,13 @@ The initial product depends on changes in RetailOS Server:
 10. Add audited feedback status updates.
 11. Add administrative audit listing.
 
-System-health diagnostics are a later dependency.
+System-health diagnostics and API monitoring are later dependencies. Before implementing API monitoring, also:
+
+12. Select and deploy an independent scheduled execution service (Cloudflare Workers Cron Triggers is the preferred option to evaluate).
+13. Select monitoring-owned storage for monitor configuration, check history, and incidents (Cloudflare D1 is a proposed option, subject to architecture review).
+14. Define and secure the monitoring control-plane API and its integration with platform-admin authentication.
+15. Verify or add lightweight liveness and readiness endpoints in RetailOS Server, with clearly documented response semantics.
+16. Implement URL/SSRF protections, execution limits, monitor-history retention, incident transitions, and notification policy.
 
 Existing store-scoped audit logs must not be treated as a substitute for platform-admin audit records. Existing store authorization must not be treated as platform-admin authorization.
 
@@ -404,13 +458,25 @@ Acceptance:
 - Every support-status mutation is traceable.
 - Audit records do not expose secrets.
 
-### Phase 5 — System health and separately approved operations
+### Phase 5 — System health and API monitoring
 
 Deliver:
 - Restricted operational diagnostics.
+- Monitored-service registration and configuration in the admin interface.
+- An independent scheduled worker, with Cloudflare Workers Cron Triggers evaluated as the initial implementation.
+- Persistent monitor configuration, check history, and incident records.
+- Periodic checks using verified lightweight health endpoints, with a recommended initial interval of 10 minutes.
+- Manual checks, status history, failure/recovery detection, and approved notifications.
 - Evaluate future account controls, internal support roles, and billing workflows through separate product/security decisions.
 
 Acceptance:
+- Scheduled checks continue when the admin browser is closed and when RetailOS Server is unavailable.
+- Only authorized administrators can manage monitors or request manual checks.
+- URL validation and SSRF protections prevent requests to internal or otherwise prohibited destinations.
+- Checks use bounded timeouts, response limits, and concurrency controls.
+- Health-check success is not represented as proof that all application workflows are healthy.
+- Uptime metrics are calculated only from real retained check records and show their reporting window.
+- Failures, recoveries, and monitoring-system errors are distinguishable and traceable.
 - Diagnostics expose only safe operational information.
 - Any new privileged operation has explicit authorization, audit coverage, tests, and a recovery procedure.
 - No deferred feature is silently added to the initial release.
@@ -433,6 +499,7 @@ The initial release is ready for production consideration when:
 - Desktop and mobile usability and basic accessibility have been checked.
 - Relevant tests, lint checks, type checks, and production build checks pass.
 - Documentation reflects the delivered behavior and known limitations.
+- If System Health & API Monitoring is included in the release, its scheduler operates independently, monitor controls are authorized, endpoint validation and execution limits are enforced, and uptime/incident data comes from actual check history.
 
 ## 14. Success measures
 
@@ -444,6 +511,7 @@ The initial release should be evaluated against these outcomes:
 - Platform-admin actions can be traced to an administrator and timestamp.
 - Ordinary users cannot access platform administration data.
 - Operators can use the core workflows on desktop and mobile.
+- In the later monitoring phase, operators can determine whether registered services are responding, inspect recent check history, and identify outages and recoveries without relying on the monitored service to run its own scheduler.
 
 Baseline values and numeric service targets should be established after the first production deployment; this PRD does not invent current platform counts or performance baselines.
 
@@ -460,5 +528,9 @@ The following decisions must be resolved before the related implementation begin
 7. What pagination limits and default sort orders should apply to administrative lists?
 8. Which operational signals are safe and useful for the later System Health phase?
 9. Which payment provider and verified payment lifecycle will be used before paid-plan activation is automated?
+10. Which monitoring control-plane authentication model will safely connect the admin application to the independent scheduler?
+11. Will Cloudflare Workers Cron Triggers and D1 be approved for production monitoring, or will another independent scheduler/storage platform be selected?
+12. Which check intervals, timeout limits, failure thresholds, retry policy, history retention period, and alert channels should be supported?
+13. Which exact liveness/readiness endpoints and success criteria will RetailOS Server expose?
 
 Do not make irreversible product or security decisions by guessing. Record approved decisions and update this document when scope changes.
