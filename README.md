@@ -22,7 +22,7 @@ Independent platform administration console for TX RetailOS. This application ha
 
 4. Start the app with `npm run dev`.
 
-The browser must be able to reach the RetailOS Server. The API must allow the Admin origin in `CORS_ORIGINS` and issue its existing secure session cookie. Use `credentials: include`; do not put API secrets or administrator credentials in frontend environment variables.
+The browser must be able to reach the RetailOS Server. The API must allow the Admin origin in `CORS_ORIGINS` and issue the separate secure `retailos_admin_session` cookie. Use `credentials: include`; do not put API secrets or administrator credentials in frontend environment variables.
 
 ## Build
 
