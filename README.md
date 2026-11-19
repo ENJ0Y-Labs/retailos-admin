@@ -22,7 +22,7 @@ Independent platform administration console for TX RetailOS. This application ha
 
 4. Start the app with `npm run dev`.
 
-The browser must be able to reach the RetailOS Server. The API must allow the Admin origin in `CORS_ORIGINS` and issue its existing secure session cookie. Use `credentials: include`; do not put API secrets or administrator credentials in frontend environment variables.
+The browser must be able to reach the RetailOS Server. The API must allow the Admin origin in `CORS_ORIGINS` and issue the separate secure `retailos_admin_session` cookie. Use `credentials: include`; do not put API secrets or administrator credentials in frontend environment variables.
 
 ## Build
 
@@ -31,9 +31,9 @@ The browser must be able to reach the RetailOS Server. The API must allow the Ad
 
 ## Backend contract
 
-The frontend uses the existing RetailOS Server platform-admin API and the existing session-based authentication flow:
+The frontend uses the existing RetailOS Server platform-admin API and its dedicated platform-admin authentication flow. Admin credentials and the `retailos_admin_session` HttpOnly cookie are independent of the Client password and session cookie:
 
-- `POST /auth/login`, `POST /auth/logout`, `POST /auth/change-password`
+- `POST /admin/auth/login`, `GET /admin/auth/me`, `POST /admin/auth/logout`, `POST /admin/auth/change-password`
 - `GET /admin/profile`, `PATCH /admin/profile`, `POST /admin/sessions/revoke-all`
 - `GET /admin/overview`
 - `GET /admin/users`, `GET /admin/users/{id}`
@@ -43,6 +43,8 @@ The frontend uses the existing RetailOS Server platform-admin API and the existi
 - `GET /admin/audit-logs`
 - `GET /admin/administrators`, `PUT /admin/users/{id}/admin-role` (super-admin only)
 - `GET /admin/monitoring/summary`, `GET /admin/monitors`, `GET /admin/incidents`
+
+Admin signs in through `/admin/auth/login` and receives an independent HttpOnly `retailos_admin_session` cookie. The Admin password is stored separately from the Client password, including when both accounts use the same email. Change the Admin password from Settings to separate credentials for accounts that were promoted from an existing retail user.
 
 All administrative authorization is enforced by the server. Frontend guards are only a navigation convenience. Pending subscription requests are never represented as paid activations. Feedback delivery state remains separate from support workflow state.
 
