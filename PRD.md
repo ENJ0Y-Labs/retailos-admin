@@ -94,20 +94,27 @@ The RetailOS Server must be inspected and updated to provide the platform-admin 
 
 ## 6. Information architecture
 
-The proposed primary navigation is:
+The independent Platform Admin navigation is:
 
-1. **Dashboard**
+1. **Overview**
 2. **Users**
 3. **Stores**
 4. **Subscriptions**
-5. **Feedback & Support**
-6. **Audit Logs**
-7. **System Health**
-8. **Settings**
+5. **Subscription Requests**
+6. **Feedback & Support**
+7. **Audit Logs**
+8. **Administrators**
+9. **Monitoring**
+10. **Incidents**
+11. **Settings**
 
-The Admin console should have its own layout and navigation. It may reuse sound design conventions from the RetailOS Client, but should not copy the shop-owner dashboard's information architecture.
+The Admin console has its own layout, routes, navigation, authentication entry point, and design system. It must not import Client UI components or depend on the RetailOS Client frontend.
 
-System Health is a read-only APIMON integration in the MVP. It is not a monitor-management interface.
+Administrator privilege management is restricted to the deployment-provisioned `super_admin`. The Administrators navigation item may be shown only to that role as a usability measure; the server remains responsible for authorization.
+
+Monitoring and Incidents are separate read-only views in the Admin interface. The current RetailOS Server exposes monitor summary, monitor list, and incident list APIs. The Admin UI does not expose monitor creation, configuration, manual-check, or scheduler controls. Recurring checks must be performed by a separately deployed scheduler, not by an open Admin browser or the Flask request process.
+
+The APIMON integration described later in this PRD remains a proposed future integration unless a verified APIMON server-to-server contract is implemented. Do not label current RetailOS monitor records as APIMON data or claim APIMON is connected.
 
 ## 7. Functional requirements
 
