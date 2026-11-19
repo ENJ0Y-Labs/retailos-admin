@@ -107,7 +107,8 @@ function Shell({ profile, onLogout, onProfileUpdate }: { profile: Profile; onLog
   const [profileMenu, setProfileMenu] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const current = nav.find(n => n.to === location.pathname) || nav[0];\n  const visibleNav = profile.platform_role === "super_admin" ? nav : nav.filter(item => item.to !== "/administrators");
+  const current = nav.find(n => n.to === location.pathname) || nav[0];
+  const visibleNav = profile.platform_role === "super_admin" ? nav : nav.filter(item => item.to !== "/administrators");
   const logout = async () => { try { await post("/auth/logout"); } finally { onLogout(); navigate("/"); } };
   return <div className="app-shell">
     {drawer && <button className="drawer-scrim" aria-label="Close navigation" onClick={()=>setDrawer(false)}/>}
