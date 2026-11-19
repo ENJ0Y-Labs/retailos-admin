@@ -31,9 +31,9 @@ The browser must be able to reach the RetailOS Server. The API must allow the Ad
 
 ## Backend contract
 
-The frontend uses the existing RetailOS Server platform-admin API and the existing session-based authentication flow:
+The frontend uses the existing RetailOS Server platform-admin API and its dedicated platform-admin authentication flow. Admin credentials and the `retailos_admin_session` HttpOnly cookie are independent of the Client password and session cookie:
 
-- `POST /auth/login`, `POST /auth/logout`, `POST /auth/change-password`
+- `POST /admin/auth/login`, `GET /admin/auth/me`, `POST /admin/auth/logout`, `POST /admin/auth/change-password`
 - `GET /admin/profile`, `PATCH /admin/profile`, `POST /admin/sessions/revoke-all`
 - `GET /admin/overview`
 - `GET /admin/users`, `GET /admin/users/{id}`
