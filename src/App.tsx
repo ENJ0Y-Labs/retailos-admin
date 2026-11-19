@@ -4,7 +4,7 @@ import {
   Activity, AlertCircle, ArrowDown, ArrowLeft, ArrowUpRight, Bell, Building2, Check,
   ChevronDown, ChevronLeft, ChevronRight, CircleHelp, ClipboardList, CreditCard,
   FileClock, LayoutDashboard, LifeBuoy, LoaderCircle, LockKeyhole, LogOut, Menu,
-  Search, Settings, Shield, ShieldCheck, Store, Users, X, Zap
+  Search, Settings, Shield, ShieldCheck, Store, Sun, Moon, Users, X, Zap
 } from "lucide-react";
 import { get, patch, post, put } from "./api";
 
@@ -91,6 +91,23 @@ function Login({ onLogin }: { onLogin: (profile: Profile) => void }) {
   </main>;
 }
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    try {
+      const saved = window.localStorage.getItem("retailos:theme:v1");
+      return saved === "light" || saved === "dark" ? saved : "dark";
+    } catch { return "dark"; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    try { window.localStorage.setItem("retailos:theme:v1", theme); } catch { /* Theme remains active for this session. */ }
+  }, [theme]);
+  const nextTheme = theme === "dark" ? "light" : "dark";
+  const Icon = theme === "dark" ? Sun : Moon;
+  return <button type="button" className="icon-button theme-toggle" onClick={() => setTheme(nextTheme)} aria-label={`Switch to ${nextTheme} theme`} title={`Switch to ${nextTheme} theme`} aria-pressed={theme === "light"}><Icon size={17}/></button>;
+}
+
 function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [checking, setChecking] = useState(true);
@@ -120,7 +137,7 @@ function Shell({ profile, onLogout, onProfileUpdate }: { profile: Profile; onLog
     </aside>
     <section className="main-column">
       <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setDrawer(true)} aria-label="Open navigation"><Menu size={20}/></button><div className="breadcrumb"><span>Platform</span><ChevronRight size={14}/><b>{current.label}</b></div></div>
-        <div className="topbar-right"><div className="environment-pill"><i/>Platform console</div><div className="profile-wrap"><button className="profile-trigger" onClick={()=>setProfileMenu(v=>!v)}><span className="avatar">{(profile.name||"A").slice(0,1).toUpperCase()}</span><span className="profile-text"><b>{profile.name}</b><small>{profile.platform_role === "super_admin" ? "Super administrator" : "Administrator"}</small></span><ChevronDown size={15}/></button>
+        <div className="topbar-right"><ThemeToggle/><div className="environment-pill"><i/>Platform console</div><div className="profile-wrap"><button className="profile-trigger" onClick={()=>setProfileMenu(v=>!v)}><span className="avatar">{(profile.name||"A").slice(0,1).toUpperCase()}</span><span className="profile-text"><b>{profile.name}</b><small>{profile.platform_role === "super_admin" ? "Super administrator" : "Administrator"}</small></span><ChevronDown size={15}/></button>
         {profileMenu && <div className="profile-menu"><button onClick={()=>{setProfileMenu(false);navigate("/settings");}}><Settings size={16}/> Settings</button><button onClick={logout}><LogOut size={16}/> Sign out</button></div>}</div></div>
       </header>
       <main className="page-content"><Routes>
