@@ -70,7 +70,7 @@ function Login({ onLogin }: { onLogin: (profile: Profile) => void }) {
     event.preventDefault(); setBusy(true); setError("");
     try {
       await post("/admin/auth/login", { email, password });
-      const result = await get<{ profile: Profile }>("/admin/profile");
+      const result = await get<{ profile: Profile }>("/admin/auth/me");
       onLogin(result.profile);
     } catch (e) { setError(messageOf(e)); }
     finally { setBusy(false); }
