@@ -92,6 +92,19 @@ Expected access:
 
 The RetailOS Server must be inspected and updated to provide the platform-admin role and dedicated authorization. These are prerequisites, not capabilities that should be assumed to exist.
 
+### 5.4 Independent Admin credentials and sessions
+
+RetailOS Admin and RetailOS Client are separate authentication realms. The same email address may identify a retail account and a platform-administrator account with different passwords.
+
+- Client authentication uses the retail account password and Client session.
+- Admin authentication uses a dedicated administrator password credential and an independent HttpOnly Admin session cookie.
+- Signing in, signing out, changing a password, or revoking sessions in one application must not replace or invalidate the other application's session.
+- Admin API authorization must validate the Admin session and server-assigned platform-admin role. A Client session must never grant platform-admin access.
+- Public registration must not create or grant platform-admin credentials.
+- Existing administrators migrated from the former shared-password flow retain their current password as the initial Admin password and must change it independently in Admin Settings.
+- When an existing retail user is granted platform-admin access, the initial Admin credential may be initialized from the current retail password for compatibility; the administrator must change it immediately in Admin Settings.
+- A bootstrap-created administrator with no pre-existing retail account must not be able to use the Admin password to sign in to the Client.
+
 ## 6. Information architecture
 
 The independent Platform Admin navigation is:
@@ -449,7 +462,7 @@ The Admin client must not ship functional screens against assumed endpoints. Bac
 
 - Server-side authorization on every Admin API request.
 - Least-privilege data exposure.
-- Secure session handling consistent with the existing RetailOS authentication model.
+- Independent Client and Admin credentials and sessions, with server-side authorization for each authentication realm.
 - No client-side privilege escalation.
 - Safe handling and rendering of user-submitted feedback.
 - Append-only administrative audit history.
