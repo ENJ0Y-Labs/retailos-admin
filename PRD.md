@@ -124,28 +124,22 @@ The APIMON integration described later in this PRD remains a proposed future int
 
 #### Summary metrics
 
-Display these metrics when the backend can calculate them reliably:
+The first dashboard uses the metrics currently returned by `GET /admin/overview`:
 
 - **Total users:** All registered user accounts.
-- **Free users:** Users whose authoritative current plan state is free.
-- **Active premium users:** Users with an active premium entitlement at query time. Expired subscriptions must not count as active premium.
-- **Trial users:** Users currently within an active trial period.
 - **Total stores:** All registered stores.
-- **Active stores:** Stores meeting a documented, server-defined activity rule. Registration alone does not prove activity.
-- **New registrations:** Accounts created during a clearly labelled reporting period.
-- **Subscription activity:** Recent plan-change requests and subscription-state changes.
-- **Subscription revenue:** Display only when actual collected payments are recorded and verified by an authoritative billing source. Do not derive revenue from plan prices, pending requests, or premium account counts. If verified payment data is unavailable, omit the metric or clearly state that revenue tracking is not configured.
-
-The server must define how users with multiple stores, overlapping trial and plan states, expired entitlements, and incomplete subscription records are counted. Metric definitions must be consistent across the dashboard and list pages.
+- **Active premium stores:** Pro stores with an active subscription status and a non-expired current period. Trial stores are excluded from this count.
+- **Active trial stores:** Pro stores with trial status and a non-expired current period.
+- **Free stores:** Stores whose persisted current plan is free or null. Expired Pro rows are not silently reclassified as free.
+- **New users in the last 30 days:** Accounts created in the rolling 30 days before the response generation time.
+- **New stores in the last 30 days:** Stores created in the rolling 30 days before the response generation time.
+- **Sales transactions in the last 30 days:** Persisted sale records created in the rolling 30 days. This is a transaction count, not revenue.
 
 #### Supporting content
 
-- User registration trend over a clearly labelled time range.
-- Free, trial, and active premium distribution.
-- Recent registrations.
-- Recent subscription or plan-change activity.
-- A compact backend health widget sourced from APIMON.
-- Links from summary metrics to relevant filtered sections where practical.
+- Server-provided metric definitions so administrators can understand exactly what each count means.
+- The response generation timestamp so the freshness of the snapshot is visible.
+- No trend chart, revenue chart, activity feed, or other visualization should be shown unless an API returns the required underlying data. Do not manufacture time-series points from aggregate totals.
 
 #### Requirements
 
