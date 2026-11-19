@@ -44,6 +44,8 @@ The frontend uses the existing RetailOS Server platform-admin API and its dedica
 - `GET /admin/administrators`, `PUT /admin/users/{id}/admin-role` (super-admin only)
 - `GET /admin/monitoring/summary`, `GET /admin/monitors`, `GET /admin/incidents`
 
+Admin signs in through `/admin/auth/login` and receives an independent HttpOnly `retailos_admin_session` cookie. The Admin password is stored separately from the Client password, including when both accounts use the same email. Change the Admin password from Settings to separate credentials for accounts that were promoted from an existing retail user.
+
 All administrative authorization is enforced by the server. Frontend guards are only a navigation convenience. Pending subscription requests are never represented as paid activations. Feedback delivery state remains separate from support workflow state.
 
 ## Monitoring boundary
