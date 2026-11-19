@@ -18,4 +18,6 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Report dependency advisories
+        run: npm audit --json || true
       - run: npm run build
