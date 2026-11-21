@@ -7,6 +7,7 @@ import {
   Search, Settings, Shield, ShieldCheck, Store, Sun, Moon, Users, X, Zap
 } from "lucide-react";
 import { get, patch, post, put } from "./api";
+import BrandMark from "./BrandMark";
 
 type Profile = { id: number; name: string; email: string; platform_role: "admin" | "super_admin" };
 type PageData<T = any> = { items: T[]; pagination: { page: number; per_page: number; total: number; pages: number; has_next: boolean; has_previous: boolean } };
@@ -77,7 +78,7 @@ function Login({ onLogin }: { onLogin: (profile: Profile) => void }) {
   };
   return <main className="login-screen">
     <section className="login-card">
-      <div className="brand-lockup"><div className="brand-mark"><Zap size={20} fill="currentColor"/></div><div><b>RetailOS</b><span>PLATFORM ADMIN</span></div></div>
+      <div className="brand-lockup"><BrandMark size={38} className="brand-mark-image" /><div><b>RetailOS</b><span>PLATFORM ADMIN</span></div></div>
       <div className="login-heading"><span className="eyebrow">SECURE ACCESS</span><h1>Welcome back</h1><p>Sign in with your provisioned platform administrator account.</p></div>
       <form onSubmit={submit} className="form-stack">
         <label>Email address<input type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@company.com" required /></label>
@@ -130,7 +131,7 @@ function Shell({ profile, onLogout, onProfileUpdate }: { profile: Profile; onLog
   return <div className="app-shell">
     {drawer && <button className="drawer-scrim" aria-label="Close navigation" onClick={()=>setDrawer(false)}/>}
     <aside className={`sidebar ${drawer ? "sidebar-open" : ""}`}>
-      <div className="sidebar-brand"><div className="brand-mark"><Zap size={19} fill="currentColor"/></div><div><b>RetailOS</b><span>ADMIN CONSOLE</span></div><button className="icon-button sidebar-close" onClick={()=>setDrawer(false)} aria-label="Close menu"><X size={18}/></button></div>
+      <div className="sidebar-brand"><BrandMark size={34} className="brand-mark-image" /><div><b>RetailOS</b><span>ADMIN CONSOLE</span></div><button className="icon-button sidebar-close" onClick={()=>setDrawer(false)} aria-label="Close menu"><X size={18}/></button></div>
       <div className="workspace-label">PLATFORM</div>
       <nav className="side-nav">{visibleNav.map(item=>{const Icon=item.icon;return <NavLink key={item.to} to={item.to} end={item.to==="/"} onClick={()=>setDrawer(false)} className={({isActive})=>`nav-link ${isActive?"nav-active":""}`}><Icon size={18}/><span>{item.label}</span></NavLink>;})}</nav>
       <div className="sidebar-bottom"><div className="sidebar-help"><div className="help-icon"><CircleHelp size={17}/></div><div><b>Need a hand?</b><span>Platform operations</span></div></div><div className="sidebar-version">TX RETAILOS <span>ADMIN · 1.0</span></div></div>
