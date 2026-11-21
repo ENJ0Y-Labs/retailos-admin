@@ -164,3 +164,5 @@ html[data-theme="light"] .status-neutral { background: #e7e5df; color: #57534e; 
 html[data-theme="light"] .inline-error { background: #fff1f0; color: #b42318; }
 html[data-theme="light"] .inline-success { background: #eaf7f0; color: #176b3a; }
 html[data-theme="light"] .security-warning .metric-icon { background: #fff0ef; color: #b42318; }
+
+.brand-mark-image { display: block; flex: none; width: 36px; height: 36px; object-fit: contain; background: transparent !important; }
