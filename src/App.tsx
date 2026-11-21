@@ -7,6 +7,7 @@ import {
   Search, Settings, Shield, ShieldCheck, Store, Sun, Moon, Users, X, Zap
 } from "lucide-react";
 import { get, patch, post, put } from "./api";
+import BrandMark from "./BrandMark";
 
 type Profile = { id: number; name: string; email: string; platform_role: "admin" | "super_admin" };
 type PageData<T = any> = { items: T[]; pagination: { page: number; per_page: number; total: number; pages: number; has_next: boolean; has_previous: boolean } };
@@ -77,7 +78,7 @@ function Login({ onLogin }: { onLogin: (profile: Profile) => void }) {
   };
   return <main className="login-screen">
     <section className="login-card">
-      <div className="brand-lockup"><div className="brand-mark"><Zap size={20} fill="currentColor"/></div><div><b>RetailOS</b><span>PLATFORM ADMIN</span></div></div>
+      <div className="brand-lockup"><BrandMark size={38} className="brand-mark-image" /><div><b>RetailOS</b><span>PLATFORM ADMIN</span></div></div>
       <div className="login-heading"><span className="eyebrow">SECURE ACCESS</span><h1>Welcome back</h1><p>Sign in with your provisioned platform administrator account.</p></div>
       <form onSubmit={submit} className="form-stack">
         <label>Email address<input type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@company.com" required /></label>
@@ -130,7 +131,7 @@ function Shell({ profile, onLogout, onProfileUpdate }: { profile: Profile; onLog
   return <div className="app-shell">
     {drawer && <button className="drawer-scrim" aria-label="Close navigation" onClick={()=>setDrawer(false)}/>}
     <aside className={`sidebar ${drawer ? "sidebar-open" : ""}`}>
-      <div className="sidebar-brand"><div className="brand-mark"><Zap size={19} fill="currentColor"/></div><div><b>RetailOS</b><span>ADMIN CONSOLE</span></div><button className="icon-button sidebar-close" onClick={()=>setDrawer(false)} aria-label="Close menu"><X size={18}/></button></div>
+      <div className="sidebar-brand"><BrandMark size={34} className="brand-mark-image" /><div><b>RetailOS</b><span>ADMIN CONSOLE</span></div><button className="icon-button sidebar-close" onClick={()=>setDrawer(false)} aria-label="Close menu"><X size={18}/></button></div>
       <div className="workspace-label">PLATFORM</div>
       <nav className="side-nav">{visibleNav.map(item=>{const Icon=item.icon;return <NavLink key={item.to} to={item.to} end={item.to==="/"} onClick={()=>setDrawer(false)} className={({isActive})=>`nav-link ${isActive?"nav-active":""}`}><Icon size={18}/><span>{item.label}</span></NavLink>;})}</nav>
       <div className="sidebar-bottom"><div className="sidebar-help"><div className="help-icon"><CircleHelp size={17}/></div><div><b>Need a hand?</b><span>Platform operations</span></div></div><div className="sidebar-version">TX RETAILOS <span>ADMIN · 1.0</span></div></div>
@@ -144,7 +145,7 @@ function Shell({ profile, onLogout, onProfileUpdate }: { profile: Profile; onLog
         <Route path="/" element={<Dashboard/>}/>
         <Route path="/users" element={<UsersPage/>}/>
         <Route path="/stores" element={<StoresPage/>}/>
-        <Route path="/subscriptions" element={<SubscriptionsPage/>}/>
+        <Route path="/subscriptions" element={<SubscriptionsPage profile={profile}/>}/>
         <Route path="/subscription-requests" element={<RequestsPage/>}/>
         <Route path="/feedback" element={<FeedbackPage/>}/>
         <Route path="/audit-logs" element={<AuditPage/>}/>
@@ -214,14 +215,69 @@ function UsersPage(){const [selected,setSelected]=useState<any>(null);return <><
 {label:"User",render:r=><div className="primary-cell"><b>{r.name}</b><span>{r.email}</span></div>},{label:"Stores",render:r=><b>{r.stores_count}</b>},{label:"Plan",render:r=>(r.stores||[]).length?<div className="stacked-cell">{r.stores.map((s:any)=><span key={s.id}>{s.subscription?.plan_name||s.subscription?.plan}</span>)}</div>:"—"},{label:"Registered",render:r=>shortDate(r.created_at)}]} rowAction={setSelected}/>{selected&&<DetailModal title={selected.name} endpoint={`/admin/users/${selected.id}`} kind="user" onClose={()=>setSelected(null)}/>}</>;}
 function StoresPage(){const [selected,setSelected]=useState<any>(null);return <><TablePage eyebrow="RETAIL NETWORK" title="Stores" description="Review registered stores, their owners and current subscription state." endpoint="/admin/stores" searchPlaceholder="Search store, owner or email" filters={[{key:"plan",label:"Plan",options:[{value:"free",label:"Free"},{value:"pro",label:"Pro"}]},{key:"subscription_status",label:"Subscription",options:[{value:"active",label:"Active"},{value:"trial",label:"Trial"},{value:"expired",label:"Expired"}]}]} columns={[
 {label:"Store",render:r=><div className="primary-cell"><b>{r.name}</b><span>Store #{r.id}</span></div>},{label:"Owner",render:r=><div className="primary-cell"><b>{r.owner?.name||"—"}</b><span>{r.owner?.email||"—"}</span></div>},{label:"Plan",render:r=><span>{r.subscription?.plan_name||r.subscription?.plan}</span>},{label:"Status",render:r=><Status value={r.subscription?.subscription_status}/>},{label:"Registered",render:r=>shortDate(r.registered_at)}]} rowAction={setSelected}/>{selected&&<DetailModal title={selected.name} endpoint={`/admin/stores/${selected.id}`} kind="store" onClose={()=>setSelected(null)}/>}</>;}
-function SubscriptionsPage(){return <TablePage eyebrow="REVENUE ENTITLEMENTS" title="Subscriptions" description="Inspect current plan entitlements. Payment status is not inferred from plan records." endpoint="/admin/subscriptions" searchPlaceholder="Search store or account" filters={[{key:"state",label:"Entitlement",options:[{value:"free",label:"Free"},{value:"trial",label:"Trial"},{value:"active",label:"Active premium"},{value:"expired",label:"Expired"}]},{key:"plan",label:"Plan",options:[{value:"free",label:"Free"},{value:"pro",label:"Pro"}]}]} columns={[
-{label:"Store",render:r=><div className="primary-cell"><b>{r.store?.name||"—"}</b><span>#{r.store?.id}</span></div>},{label:"Owner",render:r=><div className="primary-cell"><b>{r.account?.name||"—"}</b><span>{r.account?.email||"—"}</span></div>},{label:"Plan",render:r=>r.subscription?.plan_name||r.subscription?.plan||"—"},{label:"State",render:r=><Status value={r.subscription?.state||r.subscription?.subscription_status}/>},{label:"Period ends",render:r=>date(r.subscription?.current_period_end)}]}/>;}
+function PremiumGrantModal({record,canGrant,onClose,onGranted}:{record:any;canGrant:boolean;onClose:()=>void;onGranted:()=>void}){
+  const [durationDays,setDurationDays]=useState("30");
+  const [reason,setReason]=useState("");
+  const [paymentReference,setPaymentReference]=useState("");
+  const [verified,setVerified]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [error,setError]=useState("");
+  const submit=async(event:FormEvent)=>{
+    event.preventDefault();
+    if(!verified||!canGrant)return;
+    setSaving(true);setError("");
+    try{
+      await post(`/admin/stores/${record.store.id}/premium`,{
+        duration_days:Number(durationDays),
+        reason,
+        ...(paymentReference.trim()?{payment_reference:paymentReference.trim()}: {})
+      });
+      onGranted();
+    }catch(e){setError(messageOf(e));}
+    finally{setSaving(false);}
+  };
+  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <section className="detail-modal">
+      <div className="modal-head"><div><span className="eyebrow">SUBSCRIPTION DETAILS</span><h2>{record.store?.name||"Store"}</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={19}/></button></div>
+      <div className="detail-content">
+        <DetailRow label="Store ID" value={record.store?.id}/>
+        <DetailRow label="Owner" value={record.account?.name}/>
+        <DetailRow label="Owner email" value={record.account?.email}/>
+        <DetailRow label="Current plan" value={record.subscription?.plan_name||record.subscription?.plan}/>
+        <DetailRow label="Subscription status" value={record.subscription?.subscription_status}/>
+        <DetailRow label="Current period ends" value={date(record.subscription?.current_period_end)}/>
+      </div>
+      {canGrant?<form className="form-stack grant-premium-form" onSubmit={submit}>
+        <div><span className="eyebrow">MANUAL PAYMENT VERIFICATION</span><h3>Grant Pro access</h3><p className="form-help">Only activate after checking that the transfer actually reached the business bank account. A WhatsApp receipt screenshot alone is not verification.</p></div>
+        <label>Duration in days<input type="number" min={1} max={3650} step={1} value={durationDays} onChange={e=>setDurationDays(e.target.value)} required/><span className="form-help">Enter any whole number from 1 to 3650 days.</span></label>
+        <label>Payment reference (optional)<input value={paymentReference} onChange={e=>setPaymentReference(e.target.value)} maxLength={120} placeholder="Bank transaction reference"/></label>
+        <label>Verification note<textarea value={reason} onChange={e=>setReason(e.target.value)} minLength={8} maxLength={500} rows={3} placeholder="e.g. Transfer verified in business account statement" required/></label>
+        <label className="checkbox-line"><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/><span>I have independently verified that payment was received.</span></label>
+        {error&&<div className="inline-error"><AlertCircle size={15}/>{error}</div>}
+        <button className="button button-primary" disabled={saving||!verified||reason.trim().length<8||!Number.isInteger(Number(durationDays))||Number(durationDays)<1||Number(durationDays)>3650}>{saving?<LoaderCircle className="spin" size={16}/>:"Activate Premium"}</button>
+      </form>:<p className="form-help">Premium activation is restricted to the Super Admin account.</p>}
+    </section>
+  </div>;
+}
+function SubscriptionsPage({profile}:{profile:Profile}){
+  const [selected,setSelected]=useState<any>(null);
+  const [refresh,setRefresh]=useState(0);
+  const [notice,setNotice]=useState("");
+  const canGrant=profile.platform_role==="super_admin";
+  return <><TablePage eyebrow="REVENUE ENTITLEMENTS" title="Subscriptions" description="Inspect current plan entitlements. Payment status is not inferred from plan records." endpoint="/admin/subscriptions" extraQuery={`&refresh=${refresh}`} searchPlaceholder="Search store or account" filters={[{key:"state",label:"Entitlement",options:[{value:"free",label:"Free"},{value:"trial",label:"Trial"},{value:"active",label:"Active premium"},{value:"expired",label:"Expired"}]},{key:"plan",label:"Plan",options:[{value:"free",label:"Free"},{value:"pro",label:"Pro"}]}]} columns={[
+{label:"Store",render:r=><div className="primary-cell"><b>{r.store?.name||"—"}</b><span>#{r.store?.id}</span></div>},
+{label:"Owner",render:r=><div className="primary-cell"><b>{r.account?.name||"—"}</b><span>{r.account?.email||"—"}</span></div>},
+{label:"Plan",render:r=>r.subscription?.plan_name||r.subscription?.plan||"—"},
+{label:"State",render:r=><Status value={r.subscription?.state||r.subscription?.subscription_status}/>},
+{label:"Period ends",render:r=>date(r.subscription?.current_period_end)}
+]} rowAction={setSelected}/>{notice&&<div className="inline-success"><Check size={16}/>Premium entitlement activated successfully.</div>}{selected&&<PremiumGrantModal record={selected} canGrant={canGrant} onClose={()=>setSelected(null)} onGranted={()=>{setSelected(null);setNotice("success");setRefresh(v=>v+1);}}/>}</>;
+}
 function RequestsPage(){return <TablePage eyebrow="PLAN CHANGE WORKFLOW" title="Subscription requests" description="Review requested plan changes without treating pending requests as paid activations." endpoint="/admin/subscription-requests" searchPlaceholder="Search store or account" filters={[{key:"status",label:"Request status",options:[{value:"pending",label:"Pending"},{value:"cancelled",label:"Cancelled"}]}]} columns={[
 {label:"Store",render:r=><div className="primary-cell"><b>{r.store?.name||"—"}</b><span>#{r.store?.id}</span></div>},{label:"Requested by",render:r=><div className="primary-cell"><b>{r.account?.name||"—"}</b><span>{r.account?.email||"—"}</span></div>},{label:"Plan requested",render:r=>r.requested_plan?.name||r.requested_plan?.id||"—"},{label:"Request",render:r=><Status value={r.status}/>},{label:"Activation",render:r=><Status value={r.activation||"not_activated"}/>},{label:"Submitted",render:r=>date(r.requested_at)}]}/>;}
 function FeedbackPage(){const [selected,setSelected]=useState<any>(null);const [status,setStatus]=useState("new");const [saving,setSaving]=useState(false);const [error,setError]=useState("");const save=async()=>{if(!selected)return;setSaving(true);setError("");try{await patch(`/admin/feedback/${selected.id}/status`,{support_status:status});setSelected({...selected,support_status:status});}catch(e){setError(messageOf(e));}finally{setSaving(false);}};return <><TablePage eyebrow="CUSTOMER VOICE" title="Feedback & Support" description="Track support handling separately from email delivery status." endpoint="/admin/feedback" searchPlaceholder="Search submission, message or contact" filters={[{key:"support_status",label:"Support status",options:[{value:"new",label:"New"},{value:"in_progress",label:"In progress"},{value:"resolved",label:"Resolved"}]},{key:"delivery_status",label:"Email delivery",options:[{value:"sent",label:"Sent"},{value:"pending",label:"Pending"},{value:"failed",label:"Failed"}]},{key:"category",label:"Category",options:[{value:"bug",label:"Bug"},{value:"suggestion",label:"Suggestion"},{value:"question",label:"Question"},{value:"other",label:"Other"}]}]} columns={[
 {label:"Submission",render:r=><div className="primary-cell"><b>{r.submission_id}</b><span>{r.category}</span></div>},{label:"Contact",render:r=><div className="primary-cell"><b>{r.contact_name||"Anonymous"}</b><span>{r.contact_email||"No email"}</span></div>},{label:"Support",render:r=><Status value={r.support_status}/>},{label:"Delivery",render:r=><Status value={r.delivery_status}/>},{label:"Received",render:r=>date(r.created_at)}]} rowAction={r=>{setSelected(r);setStatus(r.support_status||"new");}}/>{selected&&<div className="modal-backdrop"><section className="detail-modal"><div className="modal-head"><div><span className="eyebrow">FEEDBACK TICKET</span><h2>{selected.submission_id}</h2></div><button className="icon-button" onClick={()=>setSelected(null)}><X size={19}/></button></div><FeedbackDetail id={selected.id}/><div className="form-stack status-editor"><label>Support workflow status<select value={status} onChange={e=>setStatus(e.target.value)}><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></label>{error&&<div className="inline-error">{error}</div>}<button className="button button-primary" onClick={save} disabled={saving||status===selected.support_status}>{saving?"Saving…":"Save support status"}</button></div></section></div>}</>;}
 function FeedbackDetail({id}:{id:number}){const [item,setItem]=useState<any>(null);useEffect(()=>{get<any>(`/admin/feedback/${id}`).then(r=>setItem(r.feedback)).catch(()=>{});},[id]);if(!item)return <LoadingState/>;return <div className="detail-content"><DetailRow label="Category" value={item.category}/><DetailRow label="Contact" value={item.contact_name}/><DetailRow label="Email" value={item.contact_email}/><DetailRow label="Email delivery" value={item.delivery_status}/><DetailRow label="Submitted" value={date(item.created_at)}/><div className="message-box">{item.message}</div></div>;}
-function AuditPage(){return <TablePage eyebrow="ACCOUNTABILITY" title="Audit logs" description="Append-only records of privileged platform activity." endpoint="/admin/audit-logs" searchEnabled={false} filters={[{key:"action_type",label:"Action type",options:[{value:"feedback.support_status_changed",label:"Feedback status changed"},{value:"platform_admin.profile_updated",label:"Profile updated"},{value:"platform_admin.role_granted",label:"Admin granted"},{value:"platform_admin.role_revoked",label:"Admin revoked"}]},{key:"target_type",label:"Target type",options:[{value:"user",label:"User"},{value:"feedback_submission",label:"Feedback"},{value:"monitor",label:"Monitor"}]}]} columns={[
+function AuditPage(){return <TablePage eyebrow="ACCOUNTABILITY" title="Audit logs" description="Append-only records of privileged platform activity." endpoint="/admin/audit-logs" searchEnabled={false} filters={[{key:"action_type",label:"Action type",options:[{value:"feedback.support_status_changed",label:"Feedback status changed"},{value:"subscription.premium_granted",label:"Premium granted"},{value:"platform_admin.profile_updated",label:"Profile updated"},{value:"platform_admin.role_granted",label:"Admin granted"},{value:"platform_admin.role_revoked",label:"Admin revoked"}]},{key:"target_type",label:"Target type",options:[{value:"user",label:"User"},{value:"feedback_submission",label:"Feedback"},{value:"monitor",label:"Monitor"}]}]} columns={[
 {label:"Action",render:r=><div className="primary-cell"><b>{r.action_type}</b><span>{r.target_type} · {r.target_id}</span></div>},{label:"Administrator",render:r=><div className="primary-cell"><b>{r.actor?.name||"System"}</b><span>{r.actor_user_id? `User #${r.actor_user_id}`:"No actor"}</span></div>},{label:"Details",render:r=><span className="muted-cell">{Object.keys(r.details||{}).join(", ")||"—"}</span>},{label:"Timestamp",render:r=>date(r.created_at)}]}/>;}
 function AdministratorsPage({profile}:{profile:Profile}){const [data,setData]=useState<{items:any[]}|null>(null);const [loading,setLoading]=useState(true);const [error,setError]=useState("");const [userId,setUserId]=useState("");const [busy,setBusy]=useState(false);const [notice,setNotice]=useState("");const canManage=profile.platform_role==="super_admin";const load=()=>{setLoading(true);get<{items:any[]}>("/admin/administrators").then(setData).catch(e=>setError(messageOf(e))).finally(()=>setLoading(false));};useEffect(load,[]);const change=async(id:number,role:"admin"|null)=>{setBusy(true);setNotice("");setError("");try{await put(`/admin/users/${id}/admin-role`,{platform_role:role});setNotice(role?"Administrator access granted.":"Administrator access revoked.");load();}catch(e){setError(messageOf(e));}finally{setBusy(false);}};return <><PageHeading eyebrow="ACCESS GOVERNANCE" title="Administrators" description="Manage platform administrator access. Only the deployment-provisioned super administrator can appoint or revoke administrators."/><section className="panel"><div className="panel-heading"><div><h2>Administrator directory</h2><p>Credential and session information is never displayed.</p></div><span className="record-count">{data?.items?.length??"—"} admins</span></div>{loading?<LoadingState/>:error?<ErrorState error={error} retry={load}/>:!data?.items?.length?<EmptyState title="No administrators found"/>:<div className="table-wrap"><table><thead><tr><th>Administrator</th><th>Role</th><th>Added</th>{canManage&&<th>Access</th>}</tr></thead><tbody>{data.items.map((r:any)=><tr key={r.id}><td><div className="primary-cell"><b>{r.name}</b><span>{r.email} · #{r.id}</span></div></td><td><Status value={r.platform_role}/></td><td>{shortDate(r.created_at)}</td>{canManage&&<td>{r.platform_role==="super_admin"?<span className="muted-cell">Protected root account</span>:<button className="text-button danger-text" disabled={busy} onClick={()=>change(r.id,r.platform_role==="admin"?null:"admin")}>{r.platform_role==="admin"?"Revoke access":"Grant access"}</button>}</td>}</tr>)}</tbody></table></div>}{notice&&<div className="inline-success"><Check size={16}/>{notice}</div>}{error&&<div className="inline-error">{error}</div>}</section>
 {canManage&&<section className="panel grant-panel"><div><h2>Grant administrator access</h2><p>Enter the numeric user ID of an existing RetailOS account. The server prevents self-escalation and protects the bootstrap super administrator.</p></div><form onSubmit={e=>{e.preventDefault();const id=Number(userId);if(Number.isInteger(id)&&id>0)change(id,"admin");}}><input inputMode="numeric" value={userId} onChange={e=>setUserId(e.target.value)} placeholder="User ID" required/><button className="button button-primary" disabled={busy||!userId}>Grant access</button></form></section>}</>;}

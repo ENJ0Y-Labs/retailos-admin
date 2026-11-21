@@ -44,7 +44,8 @@ The Admin MVP is not intended to:
 - Replace or duplicate the shop-owner RetailOS Client.
 - Provide public customer registration or self-service admin-role assignment.
 - Process payments, verify bank transfers, or reconcile payments.
-- Manually activate, extend, downgrade, or revoke paid plans.
+- Process online checkout, capture payments, verify bank transfers automatically, issue refunds, or reconcile payments.
+- Allow ordinary platform administrators to grant paid entitlements; manual grants are restricted to the deployment-provisioned `super_admin` after independent payment verification.
 - Delete or suspend user accounts or stores.
 - Impersonate shop owners or sign in as another user.
 - Provide unrestricted access to shop-level customer records, debts, receipts, or detailed financial transactions.
@@ -226,7 +227,7 @@ Requirements:
 
 ### 7.4 Subscription Management
 
-**Purpose:** Give platform operators visibility into plans, trials, premium entitlements, and requested plan changes.
+**Purpose:** Give platform operators visibility into plans, trials, premium entitlements, and requested plan changes, and allow the Super Admin to activate a manually verified bank-transfer purchase.
 
 The section should distinguish:
 
@@ -235,9 +236,10 @@ The section should distinguish:
 - Active premium subscriptions or entitlements.
 - Expired subscriptions.
 - Pending plan-change requests.
+- Manual Pro grants made by the Super Admin after verified bank transfer.
 - Approved or rejected requests, where those states exist.
 
-Proposed information includes user/account and store reference, current plan, subscription status, trial status and dates, requested target plan, billing interval, saved price snapshot where available, request status and timestamps, and payment reference or verified payment state only when an authoritative payment integration supplies it.
+Proposed information includes user/account and store reference, current plan, subscription status, trial status and dates, requested target plan, billing interval, saved price snapshot where available, request status and timestamps, and payment reference or verification details recorded by an authorized operator.
 
 Requirements:
 
@@ -245,17 +247,22 @@ Requirements:
 - A pending request must not be displayed as an active paid subscription.
 - The interface must reflect the server's authoritative plan and subscription state.
 - If billing data is unavailable, say so rather than manufacture a payment state.
-- The MVP is read-only.
+- The customer-facing Pro purchase flow directs the customer to the configured official WhatsApp account for bank-transfer instructions.
+- Customers send their transfer receipt through WhatsApp and provide their RetailOS account email and store identity.
+- A receipt image is not proof of payment. An operator must independently verify that funds reached the business bank account.
+- Only the deployment-provisioned `super_admin` may grant Pro to a specific store.
+- A manual grant requires a duration in days and a reason, supports an optional bank transaction reference, preserves any remaining active Pro time, and sets an authoritative expiry.
+- The server must authorize, validate, and audit every grant. The browser must never directly change subscription state.
+- The Admin UI must clearly distinguish a manually granted entitlement from an automatically verified provider payment.
 
 Out of scope:
 
-- Manual premium activation or extension.
-- Manual plan changes.
-- Payment capture, verification, refunds, invoice management, and payment reconciliation.
+- Automated online checkout and payment-provider integration.
+- Automated receipt reading or WhatsApp message ingestion.
+- Payment capture, refunds, invoice management, and payment reconciliation.
+- Manual entitlement grants by ordinary platform administrators.
 
-Manual activation may be considered later only after a verified billing workflow, explicit permissions, reason capture, duration/expiry rules, server-side validation, and audit logging have been designed and approved.
-
-**Current limitation:** The existing backend supports plan catalogue and subscription-related operations, including plan-change requests, but paid billing is not configured. A payment-provider integration and verified payment workflow are future work.
+**Current limitation:** Online checkout is not configured. The interim workflow uses WhatsApp for communication and bank-transfer instructions, with manual bank verification and Super Admin activation. The payment provider and automated billing lifecycle remain future work.
 
 ### 7.5 Feedback & Support
 
@@ -415,6 +422,7 @@ The following are proposed contracts between the Admin client and RetailOS Serve
 | GET /admin/stores/{id} | Retrieve a safe store detail view. |
 | GET /admin/subscriptions | List subscription and entitlement states. |
 | GET /admin/subscription-requests | List plan-change requests across platform scope. |
+| POST /admin/stores/{store_id}/premium | Super Admin only: grant a time-limited Pro entitlement after independently verifying a bank transfer; require duration and reason and write an audit record. |
 | GET /admin/feedback | List and filter feedback submissions. |
 | GET /admin/feedback/{id} | Retrieve feedback detail. |
 | PATCH /admin/feedback/{id} | Update the separate support workflow status. |
@@ -570,7 +578,7 @@ Acceptance:
 - Pending plan-change requests are not represented as paid activations.
 - Active premium counts exclude expired entitlements.
 - Missing billing information is not fabricated.
-- No manual premium activation or extension is available.
+- Only the deployment-provisioned Super Admin can manually grant a time-limited Pro entitlement after independently verifying payment; the operation is server-authorized and audited.
 
 ### Phase 5 — Feedback and Audit Logs
 
@@ -672,11 +680,12 @@ The following decisions must be resolved before the related implementation begin
 7. What pagination limits and default sort orders should apply to administrative lists?
 8. What exact definitions should determine active stores and last activity?
 9. What reporting periods should be available for registration trends and dashboard comparisons?
-10. Which payment provider and verified payment lifecycle will be used before paid-plan activation or revenue reporting is introduced?
-11. Which APIMON API endpoints and response fields expose monitor status, check history, and incidents?
-12. Can APIMON issue a dedicated read-only API credential or scope for RetailOS Admin?
-13. What APIMON data freshness threshold should cause the Admin UI to display a stale or unknown state?
-14. What cache duration and request timeout should the Admin backend use when retrieving APIMON data?
-15. What administrator session-management capabilities are supported by the existing authentication system?
+10. Which official WhatsApp Business number and bank account details will be used for the interim manual payment workflow? The number is configured in the Client deployment, and bank details are supplied privately through WhatsApp.
+11. Which payment provider and verified payment lifecycle will replace the interim manual workflow when online checkout is introduced?
+12. Which APIMON API endpoints and response fields expose monitor status, check history, and incidents?
+13. Can APIMON issue a dedicated read-only API credential or scope for RetailOS Admin?
+14. What APIMON data freshness threshold should cause the Admin UI to display a stale or unknown state?
+15. What cache duration and request timeout should the Admin backend use when retrieving APIMON data?
+16. What administrator session-management capabilities are supported by the existing authentication system?
 
 Do not make irreversible product or security decisions by guessing. Record approved decisions and update this document when scope changes.
