@@ -166,3 +166,10 @@ html[data-theme="light"] .inline-success { background: #eaf7f0; color: #176b3a; 
 html[data-theme="light"] .security-warning .metric-icon { background: #fff0ef; color: #b42318; }
 
 .brand-mark-image { display: block; flex: none; width: 36px; height: 36px; object-fit: contain; background: transparent !important; }
+
+.grant-premium-form { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--app-border); }
+.grant-premium-form h3 { margin: 6px 0; color: var(--app-text); font-size: 15px; font-weight: 700; }
+.form-help { color: var(--muted-text); font-size: 11px; line-height: 1.6; margin: 6px 0 0; }
+.grant-premium-form textarea { width: 100%; border: 1px solid var(--app-border); border-radius: 7px; padding: 10px; color: var(--field-text); background: var(--field-bg); font: inherit; resize: vertical; }
+.checkbox-line { display: flex !important; grid-template-columns: 16px 1fr; align-items: flex-start; gap: 9px !important; line-height: 1.5; }
+.checkbox-line input { width: 16px !important; height: 16px !important; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
